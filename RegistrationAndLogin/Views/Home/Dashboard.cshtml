@@ -1,0 +1,25 @@
+﻿
+@{
+    ViewBag.Title = "Dashboard";
+}
+
+
+Welcome @HttpContext.Current.User.Identity.Name
+<section class="row" aria-labelledby="aspnetTitle">
+    <h1 id="title">STUDENT FEEDBACK SYSTEM</h1>
+    <p class="lead">
+        This Student Feedback System is designed to manage student data. It provides
+        capability for choosing selected courses and giving feedback on the
+        perception of the delivery quality of the lecturer.
+    </p> <br />
+    <p>To submit a feedback on any of the Courses, <a href="~/Home/SubmitForm" class="btn btn-primary btn-md">Click here &raquo;</a></p>
+</section>
+
+@if (Request.IsAuthenticated)
+{
+    using (Html.BeginForm("Logout", "User", FormMethod.Post, new { id = "logoutForm" }))
+    {
+        <a href="javascript:document.getElementById('logoutForm').submit()">Logout</a>
+    }
+}
+

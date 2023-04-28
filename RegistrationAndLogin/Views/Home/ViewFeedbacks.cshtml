@@ -1,0 +1,54 @@
+﻿@model  IEnumerable<RegistrationAndLogin.Models.feedback>
+
+@{
+    ViewBag.Title = "ViewFeedbacks";
+}
+
+<h2>ViewFeedbacks</h2>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <style type="text/css">
+        table, td, th {
+            border: 1px solid green;
+        }
+
+        th {
+            background-color: Pink;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <table style="margin-left: 25%; margin-top: 10px; border: 2px solid LightGray; width:700px;">
+        <tr>
+            <th>ID</th>
+            <th>Course</th>
+            <th>FeedbackMessage</th>
+
+        </tr>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.No</td>
+                <td>@item.Course</td>
+
+                <td>@item.FeedbackMessage</td>
+            </tr>
+
+        }
+    </table>
+</body>
+</html>
+
+
+@if (Request.IsAuthenticated)
+{
+    using (Html.BeginForm("Logout", "User", FormMethod.Post, new { id = "logoutForm" }))
+    {
+        <a href="javascript:document.getElementById('logoutForm').submit()">Logout</a>
+    }
+}

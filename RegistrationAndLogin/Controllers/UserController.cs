@@ -12,7 +12,11 @@ namespace RegistrationAndLogin.Controllers
 {
     public class UserController : Controller
     {
-       //Registration Action
+
+
+       
+
+        //Registration Action
         [HttpGet]
         public ActionResult Registration()
         {
@@ -21,7 +25,7 @@ namespace RegistrationAndLogin.Controllers
         //Registration POST action 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Registration([Bind(Exclude = "IsEmailVerified,ActivationCode")] User user)
+        public ActionResult Registration(User user)
         {
             bool Status = false;
             string message = "";
@@ -30,37 +34,46 @@ namespace RegistrationAndLogin.Controllers
             if (ModelState.IsValid)
             {
 
-                #region //Email is already Exist 
-                var isExist = IsEmailExist(user.EmailID);
+                #region  
+                var isExist = IsEmailExist(user.Email);
                 if (isExist)
                 {
-                    ModelState.AddModelError("EmailExist", "Email already exist");
+                    ModelState.AddModelError("Email", "Email already exist");
                     return View(user);
                 }
                 #endregion
 
-                #region Generate Activation Code 
-                user.ActivationCode = Guid.NewGuid();
+                #region  
+                var isExistStudentID = IsStudentIDExist(user.StudentID);
+                if (isExistStudentID)
+                {
+                    ModelState.AddModelError("StudentID", "StudentID already exist");
+                    return View(user);
+                }
                 #endregion
 
                 #region  Password Hashing 
                 user.Password = PasswordCrypt.Hash(user.Password);
                 user.ConfirmPassword = PasswordCrypt.Hash(user.ConfirmPassword); //
+                user.UserRole = "student";
                 #endregion
-                user.IsEmailVerified = true;
+              
 
                 #region Save to Database
                 using (MyDatabaseEntities dc = new MyDatabaseEntities())
                 {
-                    dc.Users.Add(user);
-                    dc.SaveChanges();
+                    try
+                    {
+                        dc.Users.Add(user);
 
-                    //Send Email to User
-                    // SendVerificationLinkEmail(user.EmailID, user.ActivationCode.ToString());
-                    message = "Registration successfully done. ";
-                    /*Account activation link " + 
-                        " has been sent to your email id:" + user.EmailID;
-                   */
+                        dc.SaveChanges();
+                        message = "Registration successfully done. ";
+                    }
+                    catch (Exception ex)
+                    {
+                        message = ex.Message;   
+                    }
+                     
                     Status = true;
                 }
                 #endregion
@@ -76,30 +89,7 @@ namespace RegistrationAndLogin.Controllers
         }
         //Verify Account  
         
-        [HttpGet]
-        public ActionResult VerifyAccount(string id)
-        {
-            bool Status = false;
-            using (MyDatabaseEntities dc = new MyDatabaseEntities())
-            {
-                dc.Configuration.ValidateOnSaveEnabled = false; // This line I have added here to avoid 
-                                                                // Confirm password does not match issue on save changes
-                var v = dc.Users.Where(a => a.ActivationCode == new Guid(id)).FirstOrDefault();
-                if (v != null)
-                {
-                    v.IsEmailVerified = true;
-                    dc.SaveChanges();
-                    Status = true;
-                }
-                else
-                {
-                    ViewBag.Message = "Invalid Request";
-                }
-            }
-            ViewBag.Status = Status;
-            return View();
-        }
-
+        
         //Login 
         [HttpGet]
         public ActionResult Login()
@@ -115,21 +105,16 @@ namespace RegistrationAndLogin.Controllers
             string message = "";
             using (MyDatabaseEntities dc = new MyDatabaseEntities())
             {
-                 var v = dc.Users.Where(a => a.EmailID == login.EmailID).FirstOrDefault();
-               // var v = dc.Users.Where(a => a.StudentID == login.StudentID).FirstOrDefault();
+                 var v = dc.Users.Where(a => a.StudentID == login.StudentID).FirstOrDefault();
+             
                 if (v != null)
                 {
-                    if (!v.IsEmailVerified)
-                    {
-                        ViewBag.Message = "Please verify your email first";
-                        return View();
-                    }
-
+                   
                     if (string.Compare(PasswordCrypt.Hash(login.Password),v.Password) == 0)
                     {
                         int timeout = login.RememberMe ? 525600 : 20; // 525600 min = 1 year
                                                                       // var ticket = new FormsAuthenticationTicket(login.EmailID, login.RememberMe, timeout);
-                        var ticket = new FormsAuthenticationTicket(login.EmailID, login.RememberMe, timeout);
+                        var ticket = new FormsAuthenticationTicket(login.StudentID, login.RememberMe, timeout);
                         string encrypted = FormsAuthentication.Encrypt(ticket);
                         var cookie = new HttpCookie(FormsAuthentication.FormsCookieName, encrypted);
                         cookie.Expires = DateTime.Now.AddMinutes(timeout);
@@ -143,7 +128,7 @@ namespace RegistrationAndLogin.Controllers
                         }
                         else
                         {
-                            return RedirectToAction("Index", "Home");
+                            return RedirectToAction("Dashboard", "Home");
                         }
                     }
                     else
@@ -175,46 +160,76 @@ namespace RegistrationAndLogin.Controllers
         {
             using (MyDatabaseEntities dc = new MyDatabaseEntities())
             {
-                var v = dc.Users.Where(a => a.EmailID == emailID).FirstOrDefault();
+                var v = dc.Users.Where(a => a.Email == emailID).FirstOrDefault();
                 return v != null;
             }
         }
 
-        [NonAction]
-        public void SendVerificationLinkEmail(string emailID, string activationCode)
+
+        public bool IsStudentIDExist(string studentID)
         {
-            var verifyUrl = "/User/VerifyAccount/" + activationCode;
-            var link = Request.Url.AbsoluteUri.Replace(Request.Url.PathAndQuery, verifyUrl);
-
-            var fromEmail = new MailAddress("dotnetawesome@gmail.com", "Dotnet Awesome");
-            var toEmail = new MailAddress(emailID);
-            var fromEmailPassword = "********"; // Replace with actual password
-            string subject = "Your account is successfully created!";
-
-            string body = "<br/><br/>We are excited to tell you that your Dotnet Awesome account is" + 
-                " successfully created. Please click on the below link to verify your account" + 
-                " <br/><br/><a href='"+link+"'>"+link+"</a> ";
-
-            var smtp = new SmtpClient
+            using (MyDatabaseEntities dc = new MyDatabaseEntities())
             {
-                Host = "smtp.gmail.com",
-                Port = 587,
-                EnableSsl = true,
-                DeliveryMethod = SmtpDeliveryMethod.Network,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(fromEmail.Address, fromEmailPassword)
-            };
+                var v = dc.Users.Where(a => a.StudentID == studentID).FirstOrDefault();
+                return v != null;
+            }
+        }
 
-            using (var message = new MailMessage(fromEmail, toEmail)
-            {
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            })
-            smtp.Send(message);
+        [HttpGet]
+        public ActionResult Admin()
+        {
+            return View();
         }
 
 
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Admin(UserLogin login, string ReturnUrl = "")
+        {
+            string message = "";
+            using (MyDatabaseEntities dc = new MyDatabaseEntities())
+            {
+                var v = dc.Users.Where(a => a.Email == login.Email).FirstOrDefault() ;
+               // var x = dc.Users.Where(b => b.UserRole == "admin");
+                if (v != null && v.UserRole =="admin")
+                {
+
+                    if (string.Compare(PasswordCrypt.Hash(login.Password), v.Password) == 0 )
+                    {
+                        int timeout = login.RememberMe ? 525600 : 20; // 525600 min = 1 year
+                                                                      // var ticket = new FormsAuthenticationTicket(login.EmailID, login.RememberMe, timeout);
+                        var ticket = new FormsAuthenticationTicket(login.Email, login.RememberMe, timeout);
+                        string encrypted = FormsAuthentication.Encrypt(ticket);
+                        var cookie = new HttpCookie(FormsAuthentication.FormsCookieName, encrypted);
+                        cookie.Expires = DateTime.Now.AddMinutes(timeout);
+                        cookie.HttpOnly = true;
+                        Response.Cookies.Add(cookie);
+
+
+                        if (Url.IsLocalUrl(ReturnUrl))
+                        {
+                            return Redirect(ReturnUrl);
+                        }
+                        else
+                        {
+                            return RedirectToAction("ViewFeedbacks", "Home");
+                        }
+                    }
+                    else
+                    {
+                        message = "Incorrect Credentials";
+                    }
+                }
+                else
+                {
+                    message = "You are not Authorized to view or Login on this Channel";
+                }
+            }
+            ViewBag.Message = message;
+            return View();
+        }
     }
+
+
 }

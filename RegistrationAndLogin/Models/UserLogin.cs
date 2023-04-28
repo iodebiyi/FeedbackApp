@@ -9,12 +9,13 @@ namespace RegistrationAndLogin.Models
     public class UserLogin
     {
          [Display(Name ="Student ID")]
-         [Required(AllowEmptyStrings =false, ErrorMessage ="Email ID required")]
-         public string EmailID { get; set; } 
+         [Required(AllowEmptyStrings =false, ErrorMessage ="Student ID required")]
+         public string StudentID { get; set; } 
 
-      /*  [Display(Name = "Student ID")]
-        [Required(AllowEmptyStrings = false, ErrorMessage = "Student ID required")]
-        public string StudentID { get; set; } */
+        [Display(Name = "Email ID")]
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Email is required")]
+        [DataType(DataType.EmailAddress)]
+        public string Email { get; set; } 
 
         [Required(AllowEmptyStrings =false, ErrorMessage ="Password required")]
         [DataType(DataType.Password)]

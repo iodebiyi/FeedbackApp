@@ -14,6 +14,9 @@ namespace RegistrationAndLogin.Models
 
     public class UserMetadata
     {
+
+        public string UserRole { get; set; }
+
         [Display(Name ="First Name")]
         [Required(AllowEmptyStrings = false, ErrorMessage ="First name required")]
         public string FirstName { get; set; }
@@ -23,15 +26,15 @@ namespace RegistrationAndLogin.Models
         public string LastName { get; set; }
 
         [Display(Name ="Student ID")]
-        [Required(AllowEmptyStrings =false, ErrorMessage ="Email ID required")]
+        [Required(AllowEmptyStrings =false, ErrorMessage = "Student ID required")]
         // [DataType(DataType.EmailAddress)]
-         public string EmailID { get; set; }
-        //public string StudentID { get; set; }
+         public string StudentID { get; set; }
 
-        [Display(Name ="Admission Date")]
-        [DataType(DataType.Date)]
-        [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString ="{0:MM/dd/yyyy}")]
-        public DateTime DateOfBirth { get; set; }
+        [Display(Name = "Email ID")]
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Email  required")]
+        [DataType(DataType.EmailAddress)]
+        public string Email { get; set; }
+       
 
         [Required(AllowEmptyStrings =false, ErrorMessage ="Password is required")]
         [DataType(DataType.Password)]

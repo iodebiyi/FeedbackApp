@@ -25,6 +25,7 @@ namespace RegistrationAndLogin.Models
             throw new UnintentionalCodeFirstException();
         }
     
+        public virtual DbSet<feedback> feedbacks { get; set; }
         public virtual DbSet<User> Users { get; set; }
     }
 }
